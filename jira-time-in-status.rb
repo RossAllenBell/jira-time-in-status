@@ -155,6 +155,10 @@ def main
       'project_name',
 
       'in_flight_hours_p85',
+
+      'earliest_sprint_start_date',
+      'latest_sprint_end_date',
+
       'in_flight_hours_n',
       'in_flight_hours_avg',
       'in_flight_hours_p50',
@@ -175,6 +179,14 @@ def main
         row.fetch('in_flight_hours').to_f
       end.sort
 
+      earliest_sprint_start_date = rows.map do |row|
+        Time.parse(row.fetch('sprint_start_date'))
+      end.min
+
+      latest_sprint_end_date = rows.map do |row|
+        Time.parse(row.fetch('sprint_end_date'))
+      end.max
+
       in_flight_hours_p85 = data_points[((data_points.size * 0.85).round - 1).to_i]
       in_flight_hours_n = data_points.size
       in_flight_hours_avg = (data_points.sum / data_points.size).round(2)
@@ -186,6 +198,10 @@ def main
         project_name,
 
         in_flight_hours_p85,
+
+        earliest_sprint_start_date,
+        latest_sprint_end_date,
+
         in_flight_hours_n,
         in_flight_hours_avg,
         in_flight_hours_p50,
@@ -275,7 +291,9 @@ def is_status_in_flight(status)
     'ready for test',
     'ready for test/ review complet',
     'rework',
+    'review',
     'test done',
+    'to test',
   ].include?(status_downcase)
 
   return false if [
@@ -356,7 +374,7 @@ def sprints_in_scope
     puts "Earliest sprint start date: #{earliest_start_date}"
     puts "Latest sprint start date: #{latest_start_date}"
     puts "Earliest sprint end date: #{earliest_end_date}"
-    puts "Latest sprint end date: #{latest_start_date}"
+    puts "Latest sprint end date: #{latest_end_date}"
   end
 end
 
@@ -372,6 +390,7 @@ def all_sprints
   end.tap do |sprints|
     puts "Found #{sprints.size} sprints"
     # puts sprints.first.to_json
+    # puts sprints.to_json
   end
 end
 
