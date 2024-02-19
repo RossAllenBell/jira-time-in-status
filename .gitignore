@@ -1,5 +1,5 @@
 .DS_Store
 .byebug_history
 .jira-base64-auth
-jira-time-in-status-raw-*
-jira-time-in-status-summarized-*
+output/jira-time-in-status-raw-*
+output/jira-time-in-status-summarized-*

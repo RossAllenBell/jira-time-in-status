@@ -182,8 +182,8 @@ def main
   end
 
   timestamp = Time.now.to_i
-  filename_raw = "jira-time-in-status-raw-#{Time.now.to_i}.csv"
-  filename_summarized = "jira-time-in-status-summarized-#{Time.now.to_i}.csv"
+  filename_raw = "output/jira-time-in-status-raw-#{timestamp}.csv"
+  filename_summarized = "output/jira-time-in-status-summarized-#{timestamp}.csv"
 
   puts "Writing raw data to: #{filename_raw}"
 
