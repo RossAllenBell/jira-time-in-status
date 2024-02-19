@@ -4,8 +4,138 @@ require 'time'
 require 'csv'
 require 'byebug'
 
+CycleTimeIssueTypes = [
+  'production defect',
+  'spike',
+  'story',
+  'task',
+]
+
+CycleTimeIgnoredIssueTypes = [
+  'bug',
+  'epic',
+  'initiative',
+  'sub-task',
+]
+
+raise("Overlapping issue types: #{(CycleTimeIssueTypes & CycleTimeIgnoredIssueTypes).join(', ')}") if (CycleTimeIssueTypes & CycleTimeIgnoredIssueTypes).any?
+
+AllIssueTypes = CycleTimeIssueTypes + CycleTimeIgnoredIssueTypes
+
+CycleTimeTerminalIssueStatuses = [
+  'code merged',
+  'completed',
+  'deployed',
+  'deployed/completed',
+  'done',
+  'merged',
+]
+
+CycleTimeNotTerminalIssueStatuses = [
+  'abandoned in development',
+  'assigned for work',
+  'assigned to domain team',
+  'backlog',
+  'bi discovery',
+  'canceled',
+  'cancelled',
+  'code review',
+  'discovery',
+  'gathering requirements',
+  'in dev test',
+  'in progress',
+  'in review',
+  'in test',
+  'in validation',
+  'investigations',
+  'on-hold',
+  'open',
+  'product backlog',
+  'ready for execution',
+  'ready for external share',
+  'ready for qe',
+  'ready for test',
+  'ready for test/ review complet',
+  'ready to begin',
+  'ready to review',
+  'review',
+  'rework',
+  'stale/abandoned',
+  'test done',
+  'tickets ready for team',
+  'to do',
+  'to test',
+  'triage',
+  'up next',
+  'waiting for approval',
+  'waiting for support',
+  'work requests',
+]
+
+raise("Overlapping terminal issue statuses: #{(CycleTimeTerminalIssueStatuses & CycleTimeNotTerminalIssueStatuses).join(', ')}") if (CycleTimeTerminalIssueStatuses & CycleTimeNotTerminalIssueStatuses).any?
+
+AllIssueStatuses = CycleTimeTerminalIssueStatuses + CycleTimeNotTerminalIssueStatuses
+
+CycleTimeInFlightIssueStatuses = [
+  'code review',
+  'in dev test',
+  'in progress',
+  'in review',
+  'in test',
+  'in validation',
+  'ready to review',
+  'ready for qe',
+  'ready for test',
+  'ready for test/ review complet',
+  'rework',
+  'review',
+  'test done',
+  'to test',
+]
+
+CycleTimeNotInFlightIssueStatuses = [
+  'abandoned in development',
+  'assigned for work',
+  'assigned to domain team',
+  'backlog',
+  'bi discovery',
+  'canceled',
+  'cancelled',
+  'code merged',
+  'completed',
+  'deployed',
+  'deployed/completed',
+  'discovery',
+  'done',
+  'gathering requirements',
+  'investigations',
+  'merged',
+  'on-hold',
+  'open',
+  'product backlog',
+  'ready for execution',
+  'ready for external share',
+  'ready to begin',
+  'stale/abandoned',
+  'tickets ready for team',
+  'to do',
+  'triage',
+  'up next',
+  'waiting for approval',
+  'waiting for support',
+  'work requests',
+]
+
+raise("Overlapping in-flight issue statuses: #{(CycleTimeInFlightIssueStatuses & CycleTimeNotInFlightIssueStatuses).join(', ')}") if (CycleTimeInFlightIssueStatuses & CycleTimeNotInFlightIssueStatuses).any?
+
+# puts (AllIssueStatuses - (CycleTimeInFlightIssueStatuses + CycleTimeNotInFlightIssueStatuses)).join(', ')
+# puts ((CycleTimeInFlightIssueStatuses + CycleTimeNotInFlightIssueStatuses) - AllIssueStatuses).join(', ')
+raise('Inconsistent terminal issue statuses vs in-flight issue statuses') if (AllIssueStatuses - (CycleTimeInFlightIssueStatuses + CycleTimeNotInFlightIssueStatuses)).any? || ((CycleTimeInFlightIssueStatuses + CycleTimeNotInFlightIssueStatuses) - AllIssueStatuses).any?
+
 def main
   issues_to_time_sums = {}
+
+  statuses_from_changelog = Set.new
 
   all_issues.each do |issue|
     issue_id = issue.fetch('id')
@@ -40,6 +170,9 @@ def main
 
       from_change = item.fetch('fromString')
       to_change = item.fetch('toString')
+
+      statuses_from_changelog.add(from_change)
+      statuses_from_changelog.add(to_change)
 
       issues_to_time_sums[issue_id][from_change] ||= 0
       issues_to_time_sums[issue_id][from_change] += created - last_change_start
@@ -80,6 +213,20 @@ def main
       'in_flight_hours',
       'raw_sums_payload',
     ]
+
+    all_found_issue_types = all_issues.map do |issue|
+      issue.dig('fields', 'issuetype', 'name') || raise(issue.to_json)
+    end.uniq.map(&:downcase).sort
+    (all_found_issue_types - AllIssueTypes).tap do |unexpected_issue_types|
+      raise "Unexpected issue types: #{unexpected_issue_types.join(', ')}" if unexpected_issue_types.any?
+    end
+
+    all_found_issue_statuses = (all_issues.map do |issue|
+      issue.dig('fields', 'status', 'name') || raise(issue.to_json)
+    end + statuses_from_changelog.to_a).map(&:downcase).uniq.sort
+    (all_found_issue_statuses - AllIssueStatuses).tap do |unexpected_issue_statuses|
+      raise "Unexpected issue statuses: #{unexpected_issue_statuses.join(', ')}" if unexpected_issue_statuses.any?
+    end
 
     all_issues.each do |issue|
       issue_id = issue.fetch('id')
@@ -215,19 +362,9 @@ end
 def is_cycle_time_task(issue_type)
   issue_type_downcase = issue_type.downcase
 
-  return true if [
-    'production defect',
-    'spike',
-    'story',
-    'task',
-  ].include?(issue_type_downcase)
+  return true if CycleTimeIssueTypes.include?(issue_type_downcase)
 
-  return false if [
-    'bug',
-    'epic',
-    'initiative',
-    'sub-task',
-  ].include?(issue_type_downcase)
+  return false if CycleTimeIgnoredIssueTypes.include?(issue_type_downcase)
 
   raise("Unexpected issue type: #{issue_type_downcase}")
 end
@@ -235,39 +372,9 @@ end
 def is_cycle_time_status(status)
   status_downcase = status.downcase
 
-  return true if [
-    'code merged',
-    'deployed',
-    'done',
-    'merged',
-  ].include?(status_downcase)
+  return true if CycleTimeTerminalIssueStatuses.include?(status_downcase)
 
-  return false if [
-    'assigned to domain team',
-    'backlog',
-    'canceled',
-    'cancelled',
-    'code review',
-    'discovery',
-    'in progress',
-    'in review',
-    'in test',
-    'in validation',
-    'open',
-    'product backlog',
-    'ready for qe',
-    'ready for test',
-    'ready for test/ review complet',
-    'ready to begin',
-    'ready to review',
-    'rework',
-    'test done',
-    'to do',
-    'triage',
-    'up next',
-    'waiting for approval',
-    'waiting for support',
-  ].include?(status_downcase)
+  return false if CycleTimeNotTerminalIssueStatuses.include?(status_downcase)
 
   raise("Unexpected status: #{status_downcase}")
 end
@@ -279,41 +386,9 @@ end
 def is_status_in_flight(status)
   status_downcase = status.downcase
 
-  return true if [
-    'code review',
-    'discovery',
-    'in progress',
-    'in review',
-    'in test',
-    'in validation',
-    'ready to review',
-    'ready for qe',
-    'ready for test',
-    'ready for test/ review complet',
-    'rework',
-    'review',
-    'test done',
-    'to test',
-  ].include?(status_downcase)
+  return true if CycleTimeInFlightIssueStatuses.include?(status_downcase)
 
-  return false if [
-    'assigned to domain team',
-    'backlog',
-    'canceled',
-    'cancelled',
-    'code merged',
-    'deployed',
-    'done',
-    'merged',
-    'open',
-    'product backlog',
-    'ready to begin',
-    'to do',
-    'triage',
-    'up next',
-    'waiting for approval',
-    'waiting for support',
-  ].include?(status_downcase)
+  return false if CycleTimeNotInFlightIssueStatuses.include?(status_downcase)
 
   raise("Unexpected status: #{status_downcase}")
 end
