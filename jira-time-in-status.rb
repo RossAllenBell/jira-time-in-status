@@ -58,8 +58,10 @@ CycleTimeNotTerminalIssueStatuses = [
   'ready for test/ review complet',
   'ready to begin',
   'ready to review',
+  'request created',
   'review',
   'rework',
+  'selected for development',
   'stale/abandoned',
   'test done',
   'tickets ready for team',
@@ -116,6 +118,8 @@ CycleTimeNotInFlightIssueStatuses = [
   'ready for execution',
   'ready for external share',
   'ready to begin',
+  'request created',
+  'selected for development',
   'stale/abandoned',
   'tickets ready for team',
   'to do',
@@ -357,6 +361,23 @@ def main
       ]
     end
   end
+
+  puts "Reading summarized data back from #{filename_summarized}"
+  summarized_data = CSV.read(filename_summarized, headers: true)
+
+  summarized_data = summarized_data.sort_by do |row|
+    row.fetch('in_flight_hours_p85').to_f
+  end
+
+  summary_message = <<~HEREDOC
+    Shout out to the three teams with the shortest sprint task in-flight cycle times (p85) for the past two completed sprints:
+    #{summarized_data[0].fetch('project_name')}: #{summarized_data[0].fetch('in_flight_hours_p85').to_f.round.to_i}hrs :fire:
+    #{summarized_data[1].fetch('project_name')}: #{summarized_data[1].fetch('in_flight_hours_p85').to_f.round.to_i}hrs
+    #{summarized_data[2].fetch('project_name')}: #{summarized_data[2].fetch('in_flight_hours_p85').to_f.round.to_i}hrs
+  HEREDOC
+
+  puts ''
+  puts summary_message
 end
 
 def is_cycle_time_task(issue_type)
