@@ -4,6 +4,8 @@ require 'time'
 require 'csv'
 require 'byebug'
 
+MinimumNForSummaryOutput = 10
+
 CycleTimeIssueTypes = [
   'production defect',
   'spike',
@@ -15,6 +17,7 @@ CycleTimeIgnoredIssueTypes = [
   'bug',
   'epic',
   'initiative',
+  'portfolio',
   'sub-task',
 ]
 
@@ -365,12 +368,14 @@ def main
   puts "Reading summarized data back from #{filename_summarized}"
   summarized_data = CSV.read(filename_summarized, headers: true)
 
-  summarized_data = summarized_data.sort_by do |row|
+  summarized_data = summarized_data.select do |row|
+    row.fetch('in_flight_hours_n').to_i >= MinimumNForSummaryOutput
+  end.sort_by do |row|
     row.fetch('in_flight_hours_p85').to_f
   end
 
   summary_message = <<~HEREDOC
-    Shout out to the three teams with the shortest sprint task in-flight cycle times (p85) for the past two completed sprints:
+    Shout out to the three teams with the shortest sprint task in-flight cycle times (p85, n >= 10) for the past two completed sprints:
     #{summarized_data[0].fetch('project_name')}: #{summarized_data[0].fetch('in_flight_hours_p85').to_f.round.to_i}hrs :fire:
     #{summarized_data[1].fetch('project_name')}: #{summarized_data[1].fetch('in_flight_hours_p85').to_f.round.to_i}hrs
     #{summarized_data[2].fetch('project_name')}: #{summarized_data[2].fetch('in_flight_hours_p85').to_f.round.to_i}hrs
