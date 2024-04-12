@@ -56,14 +56,17 @@ CycleTimeNotTerminalIssueStatuses = [
   'product backlog',
   'ready for execution',
   'ready for external share',
+  'ready for finalization',
   'ready for qe',
   'ready for test',
   'ready for test/ review complet',
+  'ready for test/review complete',
   'ready to begin',
   'ready to review',
   'request created',
   'review',
   'rework',
+  'scoping',
   'selected for development',
   'stale/abandoned',
   'test done',
@@ -92,6 +95,7 @@ CycleTimeInFlightIssueStatuses = [
   'ready for qe',
   'ready for test',
   'ready for test/ review complet',
+  'ready for test/review complete',
   'rework',
   'review',
   'test done',
@@ -120,8 +124,10 @@ CycleTimeNotInFlightIssueStatuses = [
   'product backlog',
   'ready for execution',
   'ready for external share',
+  'ready for finalization',
   'ready to begin',
   'request created',
+  'scoping',
   'selected for development',
   'stale/abandoned',
   'tickets ready for team',
@@ -379,6 +385,8 @@ def main
     #{summarized_data[0].fetch('project_name')}: #{summarized_data[0].fetch('in_flight_hours_p85').to_f.round.to_i}hrs :fire:
     #{summarized_data[1].fetch('project_name')}: #{summarized_data[1].fetch('in_flight_hours_p85').to_f.round.to_i}hrs
     #{summarized_data[2].fetch('project_name')}: #{summarized_data[2].fetch('in_flight_hours_p85').to_f.round.to_i}hrs
+
+    (source: https://github.com/RossAllenBell/jira-time-in-status)
   HEREDOC
 
   puts ''
