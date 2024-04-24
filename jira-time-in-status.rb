@@ -35,6 +35,7 @@ CycleTimeTerminalIssueStatuses = [
 ]
 
 CycleTimeNotTerminalIssueStatuses = [
+  'abandoned',
   'abandoned in development',
   'assigned for work',
   'assigned to domain team',
@@ -103,6 +104,7 @@ CycleTimeInFlightIssueStatuses = [
 ]
 
 CycleTimeNotInFlightIssueStatuses = [
+  'abandoned',
   'abandoned in development',
   'assigned for work',
   'assigned to domain team',
