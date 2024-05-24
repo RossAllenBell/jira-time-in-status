@@ -325,7 +325,9 @@ def main
 
       'in_flight_hours_n',
       'in_flight_hours_avg',
+      'in_flight_hours_p75',
       'in_flight_hours_p50',
+      'in_flight_hours_p25',
       'in_flight_hours_min',
       'in_flight_hours_max',
     ]
@@ -354,7 +356,9 @@ def main
       in_flight_hours_p85 = data_points[((data_points.size * 0.85).round - 1).to_i]
       in_flight_hours_n = data_points.size
       in_flight_hours_avg = (data_points.sum / data_points.size).round(2)
+      in_flight_hours_p75 = data_points[((data_points.size * 0.75).round - 1).to_i]
       in_flight_hours_p50 = data_points[((data_points.size * 0.5).round - 1).to_i]
+      in_flight_hours_p25 = data_points[((data_points.size * 0.25).round - 1).to_i]
       in_flight_hours_min = data_points.min
       in_flight_hours_max = data_points.max
 
@@ -368,7 +372,9 @@ def main
 
         in_flight_hours_n,
         in_flight_hours_avg,
+        in_flight_hours_p75,
         in_flight_hours_p50,
+        in_flight_hours_p25,
         in_flight_hours_min,
         in_flight_hours_max,
       ]
