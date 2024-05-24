@@ -561,7 +561,15 @@ def make_request(endpoint:, paginate_through_all: false, values_key: 'values')
     puts "Requesting endpoint: #{request_endpoint}"
     response = faraday_connection.get(request_endpoint)
 
-    raise response.body unless response.success?
+    if !response.success?
+      if response.body.include?('Client must be authenticated')
+        puts "Received an error that implies either your auth token is not set, is not valid, or your Jira user doesn't have the permissions necessary to fetch sprint boards, which is a permission not given to users by default."
+        puts "Try this as a faster test:"
+        puts "\tcurl  -X GET -H \"Authorization: Basic PUT_YOUR_TOKEN_HERE\" -H \"Content-Type: application/json\" https://kininsurance.atlassian.net/rest/agile/1.0/board\""
+      end
+
+      raise response.body
+    end
 
     if paginate_through_all
       json = JSON.parse(response.body)
