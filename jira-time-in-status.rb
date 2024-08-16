@@ -46,6 +46,7 @@ CycleTimeNotTerminalIssueStatuses = [
   'cancelled',
   'code review',
   'discovery',
+  'engineer testing',
   'gathering requirements',
   'hold',
   'in dev test',
@@ -91,6 +92,7 @@ AllIssueStatuses = CycleTimeTerminalIssueStatuses + CycleTimeNotTerminalIssueSta
 
 CycleTimeInFlightIssueStatuses = [
   'code review',
+  'engineer testing',
   'in dev test',
   'in progress',
   'in review',
