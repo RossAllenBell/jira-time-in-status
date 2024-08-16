@@ -37,6 +37,7 @@ CycleTimeTerminalIssueStatuses = [
 CycleTimeNotTerminalIssueStatuses = [
   'abandoned',
   'abandoned in development',
+  'assigned',
   'assigned for work',
   'assigned to domain team',
   'backlog',
@@ -46,6 +47,7 @@ CycleTimeNotTerminalIssueStatuses = [
   'code review',
   'discovery',
   'gathering requirements',
+  'hold',
   'in dev test',
   'in progress',
   'in review',
@@ -67,6 +69,7 @@ CycleTimeNotTerminalIssueStatuses = [
   'request created',
   'review',
   'rework',
+  'seen',
   'scoping',
   'selected for development',
   'stale/abandoned',
@@ -107,6 +110,7 @@ CycleTimeInFlightIssueStatuses = [
 CycleTimeNotInFlightIssueStatuses = [
   'abandoned',
   'abandoned in development',
+  'assigned',
   'assigned for work',
   'assigned to domain team',
   'backlog',
@@ -120,6 +124,7 @@ CycleTimeNotInFlightIssueStatuses = [
   'discovery',
   'done',
   'gathering requirements',
+  'hold',
   'investigations',
   'merged',
   'on-hold',
@@ -130,6 +135,7 @@ CycleTimeNotInFlightIssueStatuses = [
   'ready for finalization',
   'ready to begin',
   'request created',
+  'seen',
   'scoping',
   'selected for development',
   'stale/abandoned',
@@ -396,7 +402,7 @@ def main
     #{summarized_data[1].fetch('project_name')}: #{summarized_data[1].fetch('in_flight_hours_p85').to_f.round.to_i}hrs
     #{summarized_data[2].fetch('project_name')}: #{summarized_data[2].fetch('in_flight_hours_p85').to_f.round.to_i}hrs
 
-    (source: https://github.com/RossAllenBell/jira-time-in-status)
+    Source: https://github.com/RossAllenBell/jira-time-in-status
   HEREDOC
 
   puts ''
