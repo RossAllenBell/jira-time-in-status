@@ -19,6 +19,7 @@ CycleTimeIgnoredIssueTypes = [
   'initiative',
   'portfolio',
   'sub-task',
+  'vulnerability',
 ]
 
 raise("Overlapping issue types: #{(CycleTimeIssueTypes & CycleTimeIgnoredIssueTypes).join(', ')}") if (CycleTimeIssueTypes & CycleTimeIgnoredIssueTypes).any?
@@ -32,6 +33,7 @@ CycleTimeTerminalIssueStatuses = [
   'deployed/completed',
   'done',
   'merged',
+  'pending production deployment'
 ]
 
 CycleTimeNotTerminalIssueStatuses = [
@@ -55,9 +57,11 @@ CycleTimeNotTerminalIssueStatuses = [
   'in test',
   'in validation',
   'investigations',
+  'new',
   'on-hold',
   'open',
   'product backlog',
+  'pull request submitted',
   'ready for execution',
   'ready for external share',
   'ready for finalization',
@@ -98,6 +102,7 @@ CycleTimeInFlightIssueStatuses = [
   'in review',
   'in test',
   'in validation',
+  'pull request submitted',
   'ready to review',
   'ready for qe',
   'ready for test',
@@ -129,8 +134,10 @@ CycleTimeNotInFlightIssueStatuses = [
   'hold',
   'investigations',
   'merged',
+  'new',
   'on-hold',
   'open',
+  'pending production deployment',
   'product backlog',
   'ready for execution',
   'ready for external share',
