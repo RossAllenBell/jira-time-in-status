@@ -1,15 +1,18 @@
+MaxRequestThreads = 10
+
 def issue_id_to_sprint_id
   @_issue_id_to_sprint_id ||= {}
 end
 
 def all_issues
-  @_all_issues ||= sprints_in_scope.reduce({}) do |ids_to_issues, sprint|
-    make_request(endpoint: "/rest/agile/1.0/sprint/#{sprint.fetch('id')}/issue?expand=changelog", paginate_through_all: true, values_key: 'issues').each do |issue|
+  @_all_issues ||= split_across_workers(sprints_in_scope) do |sprint|
+    make_request(endpoint: "/rest/agile/1.0/sprint/#{sprint.fetch('id')}/issue?expand=changelog", paginate_through_all: true, values_key: 'issues').map do |issue|
       issue_id_to_sprint_id[issue.fetch('id')] = sprint.fetch('id') # so we can reference back the other way
-      ids_to_issues[issue.fetch('id')] = issue # enforce deduplication across sprints
+      issue
     end
-
-    ids_to_issues
+  end.reduce({}) do |hash, issue|
+    hash[issue.fetch('id')] = issue
+    hash
   end.values.sort_by do |issue|
     issue.fetch('id').to_i
   end.tap do |issues|
@@ -65,11 +68,11 @@ def four_weeks
 end
 
 def all_sprints
-  @_all_sprints ||= all_boards.reduce({}) do |sum, board|
-    get_sprints(board: board).each do |sprint|
-      sum[sprint.fetch('id')] = sprint # deduplication
-    end
-    sum
+  @_all_sprints ||= split_across_workers(all_boards) do |board|
+    get_sprints(board: board)
+  end.reduce({}) do |hash, sprint|
+    hash[sprint.fetch('id')] = sprint
+    hash
   end.values.sort_by do |sprint|
     sprint.fetch('id')
   end.tap do |sprints|
@@ -179,4 +182,28 @@ end
 
 def jira_base64_auth
   @_jira_base64_auth ||= File.read('.jira-base64-auth')
+end
+
+def split_across_workers(payloads, &block)
+  paylods_to_iterate = payloads.dup # leave original list intact
+  return_values = Queue.new
+  threads = []
+  while paylods_to_iterate.size + threads.size > 0
+    threads.each_with_index do |thread, index|
+      if !thread.status
+        threads[index] = nil
+        thread.join
+      end
+    end
+    threads.compact!
+    while threads.size < MaxRequestThreads && paylods_to_iterate.size > 0
+      threads << Thread.new(paylods_to_iterate.shift) do |payload|
+        block.call(payload).each do |return_value|
+          return_values << return_value
+        end
+      end
+    end
+    sleep 0.1
+  end
+  Array.new(return_values.size) { return_values.pop }
 end
