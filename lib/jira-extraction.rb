@@ -1,31 +1,14 @@
-MaxRequestThreads = 10
-
 def issue_id_to_sprint_id
   @_issue_id_to_sprint_id ||= {}
 end
 
 def all_issues
-  @_all_issues ||= begin
-    sprints_to_iterate = sprints_in_scope.dup # leave original list intact
-    ids_to_issues = {}
-    threads = []
-    while sprints_to_iterate.size + threads.size > 0
-      threads.each_with_index do |thread, index|
-        if !thread.status
-          threads[index] = nil
-          thread.join
-        end
-      end
-      threads.compact!
-      while threads.size < MaxRequestThreads && sprints_to_iterate.size > 0
-        threads << Thread.new(sprints_to_iterate.shift) do |sprint|
-          make_request(endpoint: "/rest/agile/1.0/sprint/#{sprint.fetch('id')}/issue?expand=changelog", paginate_through_all: true, values_key: 'issues').each do |issue|
-            issue_id_to_sprint_id[issue.fetch('id')] = sprint.fetch('id') # so we can reference back the other way
-            ids_to_issues[issue.fetch('id')] = issue # enforce deduplication across sprints
-          end
-        end
-      end
+  @_all_issues ||= sprints_in_scope.reduce({}) do |ids_to_issues, sprint|
+    make_request(endpoint: "/rest/agile/1.0/sprint/#{sprint.fetch('id')}/issue?expand=changelog", paginate_through_all: true, values_key: 'issues').each do |issue|
+      issue_id_to_sprint_id[issue.fetch('id')] = sprint.fetch('id') # so we can reference back the other way
+      ids_to_issues[issue.fetch('id')] = issue # enforce deduplication across sprints
     end
+
     ids_to_issues
   end.values.sort_by do |issue|
     issue.fetch('id').to_i
@@ -72,6 +55,8 @@ def sprints_in_scope
     puts "Latest sprint start date: #{latest_start_date}"
     puts "Earliest sprint end date: #{earliest_end_date}"
     puts "Latest sprint end date: #{latest_end_date}"
+
+    # puts sprints.map{ |s| s.fetch('id').to_i}.to_json
   end
 end
 
@@ -80,26 +65,12 @@ def four_weeks
 end
 
 def all_sprints
-  @_all_sprints ||= begin
-    boards_to_iterate = all_boards.dup # leave original list intact
-    sprints = []
-    threads = []
-    while boards_to_iterate.size + threads.size > 0
-      threads.each_with_index do |thread, index|
-        if !thread.status
-          threads[index] = nil
-          thread.join
-        end
-      end
-      threads.compact!
-      while threads.size < MaxRequestThreads && boards_to_iterate.size > 0
-        threads << Thread.new(boards_to_iterate.shift) do |board|
-          sprints += get_sprints(board: board)
-        end
-      end
+  @_all_sprints ||= all_boards.reduce({}) do |sum, board|
+    get_sprints(board: board).each do |sprint|
+      sum[sprint.fetch('id')] = sprint # deduplication
     end
-    sprints
-  end.sort_by do |sprint|
+    sum
+  end.values.sort_by do |sprint|
     sprint.fetch('id')
   end.tap do |sprints|
     puts "Found #{sprints.size} sprints"
