@@ -197,7 +197,7 @@ def main
       is_cycle_time_task && is_cycle_time_status && is_cycle_time_data
     end.group_by do |row|
       row.fetch('project_name')
-    end.each do |project_name, rows|
+    end.to_a.sort_by(&:first).to_h.each do |project_name, rows|
       data_points = rows.map do |row|
         row.fetch('in_flight_hours').to_f
       end.sort

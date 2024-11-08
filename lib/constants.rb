@@ -41,6 +41,7 @@ CycleTimeNotTerminalIssueStatuses = [
   'canceled',
   'cancelled',
   'code review',
+  'data qa in dev',
   'discovery',
   'engineer testing',
   'gathering requirements',
@@ -68,8 +69,8 @@ CycleTimeNotTerminalIssueStatuses = [
   'request created',
   'review',
   'rework',
-  'seen',
   'scoping',
+  'seen',
   'selected for development',
   'stale/abandoned',
   'test done',
@@ -90,6 +91,7 @@ AllIssueStatuses = CycleTimeTerminalIssueStatuses + CycleTimeNotTerminalIssueSta
 
 CycleTimeInFlightIssueStatuses = [
   'code review',
+  'data qa in dev',
   'engineer testing',
   'in dev test',
   'in progress',
