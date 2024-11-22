@@ -38,6 +38,7 @@ CycleTimeNotTerminalIssueStatuses = [
   'assigned to domain team',
   'backlog',
   'bi discovery',
+  'blocked',
   'canceled',
   'cancelled',
   'code review',
@@ -90,6 +91,7 @@ raise("Overlapping terminal issue statuses: #{(CycleTimeTerminalIssueStatuses & 
 AllIssueStatuses = CycleTimeTerminalIssueStatuses + CycleTimeNotTerminalIssueStatuses
 
 CycleTimeInFlightIssueStatuses = [
+  'blocked',
   'code review',
   'data qa in dev',
   'engineer testing',

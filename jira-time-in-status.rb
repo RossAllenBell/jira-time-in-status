@@ -102,7 +102,19 @@ def main
       raise "Unexpected issue statuses: #{unexpected_issue_statuses.join(', ')}" if unexpected_issue_statuses.any?
     end
 
-    all_issues.each do |issue|
+    all_issues.sort_by do |issue|
+      issue_id = issue.fetch('id')
+
+      sprint_id = issue_id_to_sprint_id.fetch(issue_id)
+      sprint = sprints_by_id.fetch(sprint_id)
+
+      board_id = sprint.fetch('originBoardId')
+      board = boards_by_id[board_id]
+
+      project_name = board&.dig('location', 'projectName')
+
+      [project_name, sprint_id, issue_id]
+    end.each do |issue|
       issue_id = issue.fetch('id')
       issue_key = issue.fetch('key')
 
