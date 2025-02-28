@@ -203,7 +203,7 @@ def split_across_workers(payloads, &block)
         end
       end
     end
-    sleep 0.1
+    sleep 0.01
   end
   Array.new(return_values.size) { return_values.pop }
 end
