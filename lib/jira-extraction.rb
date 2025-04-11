@@ -46,7 +46,7 @@ def sprints_in_scope
 
     closed && end_date < Time.now && end_date >= (Time.now - four_weeks)
   end.tap do |sprints|
-    puts "Using #{sprints.size} of #{all_sprints.size} after selecting for state and end dates"
+    puts "Using #{sprints.size} of #{all_sprints.size} after selecting for start and end dates"
 
     earliest_start_date = sprints.map{|s| Time.parse(s.fetch('startDate'))}.min
     latest_start_date = sprints.map{|s| Time.parse(s.fetch('startDate'))}.max
@@ -110,7 +110,7 @@ def all_boards
     board.fetch('id')
   end.tap do |boards|
     puts "Found #{boards.size} boards"
-    # puts boards.first.to_json
+    # puts boards.to_json
   end
 end
 

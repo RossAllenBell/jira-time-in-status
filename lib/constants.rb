@@ -27,7 +27,9 @@ CycleTimeTerminalIssueStatuses = [
   'deployed/completed',
   'done',
   'merged',
-  'pending production deployment'
+  'pending production deployment',
+  'verifed',
+  'verified',
 ]
 
 CycleTimeNotTerminalIssueStatuses = [
@@ -83,8 +85,6 @@ CycleTimeNotTerminalIssueStatuses = [
   'to test',
   'triage',
   'up next',
-  'verifed',
-  'verified',
   'waiting for approval',
   'waiting for support',
   'work requests',
