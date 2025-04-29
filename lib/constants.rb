@@ -85,6 +85,7 @@ CycleTimeNotTerminalIssueStatuses = [
   'to test',
   'triage',
   'up next',
+  'validation',
   'waiting for approval',
   'waiting for support',
   'work requests',
@@ -114,6 +115,7 @@ CycleTimeInFlightIssueStatuses = [
   'review',
   'test done',
   'to test',
+  'validation',
 ]
 
 CycleTimeNotInFlightIssueStatuses = [
