@@ -30,6 +30,8 @@ CycleTimeTerminalIssueStatuses = [
   'merged',
   'pending production deployment',
   'update complete',
+  'verifed',
+  'verified',
 ]
 
 CycleTimeNotTerminalIssueStatuses = [
@@ -101,8 +103,6 @@ CycleTimeNotTerminalIssueStatuses = [
   'up next',
   'user acceptance testing (uat)',
   'validation',
-  'verifed',
-  'verified',
   'waiting for approval',
   'waiting for support',
   'waiting on user confirmation',
@@ -137,8 +137,6 @@ CycleTimeInFlightIssueStatuses = [
   'to test',
   'user acceptance testing (uat)',
   'validation',
-  'verifed',
-  'verified',
   'waiting on user confirmation',
 ]
 
@@ -197,6 +195,8 @@ CycleTimeNotInFlightIssueStatuses = [
   'triage',
   'up next',
   'update complete',
+  'verifed',
+  'verified',
   'waiting for approval',
   'waiting for support',
   "won't do",

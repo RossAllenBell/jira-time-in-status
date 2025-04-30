@@ -293,7 +293,7 @@ def is_cycle_time_status(status)
 end
 
 def is_cycle_time_data(in_flight_hours)
-  return in_flight_hours > 0
+  return in_flight_hours >= 15/60.0 # don't count anything that was less than 15mins
 end
 
 def is_status_in_flight(status)
