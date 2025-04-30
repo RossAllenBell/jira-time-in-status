@@ -4,12 +4,14 @@ def issue_id_to_sprint_id
   @_issue_id_to_sprint_id ||= {}
 end
 
+def issue_id_to_board_id
+  @_issue_id_to_board_id ||= {}
+end
+
 def all_issues
-  @_all_issues ||= split_across_workers(sprints_in_scope) do |sprint|
-    make_request(endpoint: "/rest/agile/1.0/sprint/#{sprint.fetch('id')}/issue?expand=changelog", paginate_through_all: true, values_key: 'issues').map do |issue|
-      issue_id_to_sprint_id[issue.fetch('id')] = sprint.fetch('id') # so we can reference back the other way
-      issue
-    end
+  @_all_issues ||= begin
+    all_scrum_issues +
+    all_kanban_and_simple_issues
   end.reduce({}) do |hash, issue|
     hash[issue.fetch('id')] = issue
     hash
@@ -29,6 +31,72 @@ def all_issues
   end
 end
 
+def all_scrum_issues
+  @_all_scrum_issues ||= split_across_workers(sprints_in_scope) do |sprint|
+    make_request(endpoint: "/rest/agile/1.0/sprint/#{sprint.fetch('id')}/issue?expand=changelog", paginate_through_all: true, values_key: 'issues').each do |issue|
+      issue_id_to_sprint_id[issue.fetch('id')] = sprint.fetch('id') # so we can reference back the other way
+      issue_id_to_board_id[issue.fetch('id')] = sprint.fetch('originBoardId') # so we can reference back the other way
+    end
+  end.reduce({}) do |hash, issue|
+    hash[issue.fetch('id')] = issue
+    hash
+  end.values.sort_by do |issue|
+    issue.fetch('id').to_i
+  end.tap do |issues|
+    puts "Found #{issues.size} scrum issues"
+    # puts issues.first.to_json
+
+    issues.group_by do |issue|
+      issue.fetch('id')
+    end.select do |issue_id, issues|
+      issues.size > 1
+    end.tap do |dupes|
+      raise("Found duplicate scrum issues: #{dupes.keys.sort}") if dupes.keys.size > 0
+    end
+  end
+end
+
+def all_kanban_and_simple_issues
+  @all_kanban_and_simple_issues ||= begin
+    start_date = median_sprint_start_date.strftime('%Y-%m-%d')
+    end_date = median_sprint_end_date.strftime('%Y-%m-%d')
+
+    split_across_workers(kanban_and_simple_project_boards) do |kanban_and_simple_board|
+      # puts kanban_and_simple_board.to_json
+      jql = URI.encode_www_form_component("project = \"#{kanban_and_simple_board.fetch('location').fetch('projectKey')}\" AND resolved > \"#{start_date}\" AND resolved <= \"#{end_date}\" ORDER BY id")
+      make_request(endpoint: "/rest/api/3/search?expand=changelog&jql=#{jql}", paginate_through_all: true, values_key: 'issues').each do |issue|
+        issue_id_to_board_id[issue.fetch('id')] = kanban_and_simple_board.fetch('id') # so we can reference back the other way
+      end
+    end
+  end.reduce({}) do |hash, issue|
+    hash[issue.fetch('id')] = issue
+    hash
+  end.values.sort_by do |issue|
+    issue.fetch('id').to_i
+  end.tap do |issues|
+    puts "Found #{issues.size} kanban_and_simple issues"
+    # puts issues.first(10).to_json
+
+    issues.group_by do |issue|
+      issue.fetch('id')
+    end.select do |issue_id, issues|
+      issues.size > 1
+    end.tap do |dupes|
+      raise("Found duplicate kanban and simple issues: #{dupes.keys.sort}") if dupes.keys.size > 0
+    end
+  end
+end
+
+def kanban_and_simple_project_boards
+  @_kanban_and_simple_project_boards ||= all_boards.select do |board|
+    board_type = board.fetch('type')
+    board.dig('location', 'projectKey') && ['kanban','simple',].include?(board_type)
+  end.tap do |boards|
+    puts "Found #{boards.size} kanban and simple boards"
+    # puts boards.to_json
+  end
+end
+
 def issues_by_id
   @_issues_by_id ||= all_issues.map do |issue|
     [issue.fetch('id'), issue]
@@ -36,7 +104,7 @@ def issues_by_id
 end
 
 def sprints_in_scope
-  all_sprints.select do |sprint|
+  @_sprints_in_scope ||= all_sprints.select do |sprint|
     closed = sprint.fetch('state') == 'closed'
 
     end_date = nil
@@ -44,7 +112,7 @@ def sprints_in_scope
       end_date = Time.parse(sprint.fetch('endDate'))
     end
 
-    closed && end_date < Time.now && end_date >= (Time.now - four_weeks)
+    closed && end_date < Time.now && end_date >= (Time.now - four_weeks_in_seconds)
   end.tap do |sprints|
     puts "Using #{sprints.size} of #{all_sprints.size} after selecting for start and end dates"
 
@@ -56,6 +124,7 @@ def sprints_in_scope
 
     puts "Earliest sprint start date: #{earliest_start_date}"
     puts "Latest sprint start date: #{latest_start_date}"
+    puts ''
     puts "Earliest sprint end date: #{earliest_end_date}"
     puts "Latest sprint end date: #{latest_end_date}"
 
@@ -63,7 +132,23 @@ def sprints_in_scope
   end
 end
 
-def four_weeks
+def median_sprint_start_date
+  @_median_sprint_start_date ||= sprints_in_scope.map do |sprint|
+    Time.parse(sprint.fetch('startDate'))
+  end.sort[(sprints_in_scope.size * 0.25).ceil].tap do |start_date|
+    puts "Using median sprint start date of: #{start_date}"
+  end
+end
+
+def median_sprint_end_date
+  @_median_sprint_end_date ||= sprints_in_scope.map do |sprint|
+    Time.parse(sprint.fetch('endDate'))
+  end.sort[(sprints_in_scope.size * 0.75).ceil].tap do |end_date|
+    puts "Using median sprint end date of: #{end_date}"
+  end
+end
+
+def four_weeks_in_seconds
   60 * 60 * 24 * 7 * 4
 end
 
@@ -107,6 +192,10 @@ end
 
 def all_boards
   @_all_boards ||= make_request(endpoint: '/rest/agile/1.0/board', paginate_through_all: true).sort_by do |board|
+    # if board.fetch('id') == 959
+    #   puts board.to_json
+    #   raise
+    # end
     board.fetch('id')
   end.tap do |boards|
     puts "Found #{boards.size} boards"
@@ -185,10 +274,10 @@ def jira_base64_auth
 end
 
 def split_across_workers(payloads, &block)
-  paylods_to_iterate = payloads.dup # leave original list intact
+  payloads_to_iterate = payloads.dup # leave original list intact
   return_values = Queue.new
   threads = []
-  while paylods_to_iterate.size + threads.size > 0
+  while payloads_to_iterate.size + threads.size > 0
     threads.each_with_index do |thread, index|
       if !thread.status
         threads[index] = nil
@@ -196,8 +285,8 @@ def split_across_workers(payloads, &block)
       end
     end
     threads.compact!
-    while threads.size < MaxRequestThreads && paylods_to_iterate.size > 0
-      threads << Thread.new(paylods_to_iterate.shift) do |payload|
+    while threads.size < MaxRequestThreads && payloads_to_iterate.size > 0
+      threads << Thread.new(payloads_to_iterate.shift) do |payload|
         block.call(payload).each do |return_value|
           return_values << return_value
         end

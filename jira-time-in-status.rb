@@ -105,25 +105,25 @@ def main
     all_issues.sort_by do |issue|
       issue_id = issue.fetch('id')
 
-      sprint_id = issue_id_to_sprint_id.fetch(issue_id)
-      sprint = sprints_by_id.fetch(sprint_id)
+      sprint_id = issue_id_to_sprint_id[issue_id]
+      sprint = sprints_by_id.fetch(sprint_id) unless sprint_id.nil?
 
-      board_id = sprint.fetch('originBoardId')
-      board = boards_by_id[board_id]
+      board_id = issue_id_to_board_id[issue_id]
+      board = boards_by_id.fetch(board_id) unless board_id.nil?
 
       project_name = board&.dig('location', 'projectName')
 
-      [project_name, sprint_id, issue_id]
+      [project_name, board_id || 0, sprint_id || 0, issue_id]
     end.each do |issue|
       issue_id = issue.fetch('id')
       issue_key = issue.fetch('key')
 
-      sprint_id = issue_id_to_sprint_id.fetch(issue_id)
-      sprint = sprints_by_id.fetch(sprint_id)
-      sprint_name = sprint.fetch('name')
+      sprint_id = issue_id_to_sprint_id[issue_id]
+      sprint = sprints_by_id.fetch(sprint_id) unless sprint_id.nil?
+      sprint_name = sprint.fetch('name') unless sprint_id.nil?
 
-      board_id = sprint.fetch('originBoardId')
-      board = boards_by_id[board_id]
+      board_id = issue_id_to_board_id[issue_id]
+      board = boards_by_id.fetch(board_id) unless board_id.nil?
 
       if board.nil?
         missing_board = {
@@ -155,10 +155,10 @@ def main
 
         sprint_id,
         sprint_name,
-        sprint.fetch('createdDate'),
-        sprint.fetch('completeDate'),
-        sprint.fetch('startDate'),
-        sprint.fetch('endDate'),
+        sprint&.fetch('createdDate'),
+        sprint&.fetch('completeDate'),
+        sprint&.fetch('startDate'),
+        sprint&.fetch('endDate'),
 
         issue_id,
         issue_key,
@@ -215,12 +215,12 @@ def main
       end.sort
 
       earliest_sprint_start_date = rows.map do |row|
-        Time.parse(row.fetch('sprint_start_date'))
-      end.min
+        Time.parse(row.fetch('sprint_start_date')) unless row.fetch('sprint_start_date').to_s.size == 0
+      end.compact.min
 
       latest_sprint_end_date = rows.map do |row|
-        Time.parse(row.fetch('sprint_end_date'))
-      end.max
+        Time.parse(row.fetch('sprint_end_date')) unless row.fetch('sprint_end_date').to_s.size == 0
+      end.compact.max
 
       in_flight_hours_p85 = data_points[((data_points.size * 0.85).round - 1).to_i]
       in_flight_hours_n = data_points.size
